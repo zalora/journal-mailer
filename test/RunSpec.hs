@@ -6,7 +6,7 @@ import Data.String
 import Test.Hspec
 import Test.QuickCheck
 
-import Run hiding (main)
+import Run
 
 
 main :: IO ()

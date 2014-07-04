@@ -1,7 +1,5 @@
 
-module Main where
-
-import qualified Run
+import Run
 
 main :: IO ()
-main = Run.main
+main = run

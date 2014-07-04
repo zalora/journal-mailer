@@ -23,8 +23,8 @@ import System.Exit.Compat
 import Text.Read (readMaybe)
 
 
-main :: IO ()
-main = do
+run :: IO ()
+run = do
     receivers <- getArgs
     case receivers of
         [] -> do
