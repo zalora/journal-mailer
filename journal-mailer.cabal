@@ -1,0 +1,50 @@
+name:                journal-mailer
+version:             0.1.0.0
+synopsis:            Sends out emails for every severe journal message
+license:             BSD3
+license-file:        LICENSE
+author:              Sönke Hahn
+maintainer:          soenke.hahn@zalora.com
+category:            System
+build-type:          Simple
+cabal-version:       >=1.10
+
+executable journal-mailer
+  main-is: Main.hs
+  build-depends:
+    base >=4.6 && <4.7,
+    base-compat,
+    libsystemd-journal,
+    pipes,
+    pipes-safe,
+    unordered-containers,
+    bytestring,
+    string-conversions,
+    mime-mail,
+    text
+  hs-source-dirs: src
+  default-language: Haskell2010
+  ghc-options:
+      -Wall -Werror -fno-warn-name-shadowing
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  ghc-options:
+      -Wall -Werror -fno-warn-name-shadowing
+  default-language: Haskell2010
+  hs-source-dirs: src, test
+  main-is: Spec.hs
+  build-depends:
+    base >=4.6 && <4.7,
+    base-compat,
+    libsystemd-journal,
+    pipes,
+    pipes-safe,
+    unordered-containers,
+    bytestring,
+    string-conversions,
+    mime-mail,
+    text,
+
+    hspec,
+    QuickCheck
