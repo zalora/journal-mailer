@@ -65,7 +65,7 @@ notify receivers entry = do
     renderSendMail $
         addPart [plainPart $ cs (pretty entry)] $
         mailFromToSubject
-            (addr "datascience@zalora.com")
+            (addr "devops@zalora.com")
             (map addr receivers)
             ("epsilon: systemd unit " <> unitName entry <> " failed")
   where
