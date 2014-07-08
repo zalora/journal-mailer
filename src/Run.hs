@@ -20,6 +20,7 @@ import qualified Pipes.Prelude as P
 import Systemd.Journal
 import System.Environment
 import System.Exit.Compat
+import System.IO
 import Text.Read (readMaybe)
 
 
@@ -59,7 +60,8 @@ isSevere p = fromEnum p <= fromEnum Error
 
 
 notify :: [String] -> JournalEntry -> IO ()
-notify receivers entry =
+notify receivers entry = do
+    hPutStrLn stderr "sending mail notification"
     renderSendMail $
         addPart [plainPart $ cs (pretty entry)] $
         mailFromToSubject
