@@ -1,12 +1,12 @@
 
-module RunSpec where
+module ProcessSpec where
 
 import Data.Char
 import Data.String
 import Test.Hspec
 import Test.QuickCheck
 
-import Run
+import Process
 
 
 main :: IO ()
