@@ -12,7 +12,7 @@ cabal-version:       >=1.10
 executable journal-mailer
   main-is: Main.hs
   build-depends:
-    base >=4.6 && <4.7,
+    base == 4.*,
     base-compat,
     libsystemd-journal,
     pipes,
@@ -35,7 +35,7 @@ test-suite spec
   hs-source-dirs: src, test
   main-is: Spec.hs
   build-depends:
-    base >=4.6 && <4.7,
+    base == 4.*,
     base-compat,
     libsystemd-journal,
     pipes,
