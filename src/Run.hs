@@ -26,21 +26,21 @@ import Text.Read (readMaybe)
 
 run :: IO ()
 run = do
-    receivers <- getArgs
-    case receivers of
-        [] -> do
-            progName <- getProgName
-            die ("usage: " ++ progName ++ " EMAIL_ADDRESS...")
-        _ -> runEffect $ runSafeP $ effect receivers
+  receivers <- getArgs
+  case receivers of
+    [] -> do
+      progName <- getProgName
+      die ("usage: " ++ progName ++ " EMAIL_ADDRESS...")
+    _ -> runEffect $ runSafeP $ effect receivers
 
 
 effect :: [String] -> Effect (SafeT IO) ()
 effect receivers =
-    journal >->
-    P.map extractPriority >->
-    pCatMaybes >->
-    P.filter (isSevere . fst) >->
-    for cat (liftIO . notify receivers . snd)
+  journal >->
+  P.map extractPriority >->
+  pCatMaybes >->
+  P.filter (isSevere . fst) >->
+  for cat (liftIO . notify receivers . snd)
 
 
 journal :: MonadSafe m => Producer JournalEntry m ()
@@ -49,8 +49,8 @@ journal = openJournal [] FromEnd Nothing Nothing
 
 extractPriority :: JournalEntry -> Maybe (Priority, JournalEntry)
 extractPriority entry = do
-    p <- lookup "PRIORITY" (journalEntryFields entry)
-    (, entry) <$> parsePriority p
+  p <- lookup "PRIORITY" (journalEntryFields entry)
+  (, entry) <$> parsePriority p
 
 parsePriority :: ByteString -> Maybe Priority
 parsePriority = readMaybe . cs >=> toEnumMaybe
@@ -61,49 +61,49 @@ isSevere p = fromEnum p <= fromEnum Error
 
 notify :: [String] -> JournalEntry -> IO ()
 notify receivers entry = do
-    hPutStrLn stderr "sending mail notification"
-    renderSendMail $
-        addPart [plainPart $ cs (pretty entry)] $
-        mailFromToSubject
-            (addr "devops@zalora.com")
-            (map addr receivers)
-            ("epsilon: systemd unit " <> unitName entry <> " failed")
-  where
-    addr :: String -> Address
-    addr = Address Nothing . cs
+  hPutStrLn stderr "sending mail notification"
+  renderSendMail $
+    addPart [plainPart $ cs (pretty entry)] $
+    mailFromToSubject
+      (addr "devops@zalora.com")
+      (map addr receivers)
+      ("epsilon: systemd unit " <> unitName entry <> " failed")
+ where
+  addr :: String -> Address
+  addr = Address Nothing . cs
 
-    pretty :: JournalEntry -> String
-    pretty =
-        journalEntryFields >>>
-        toList >>>
-        map (\ (key, value) -> prettyJournalField key ++ " = " ++ cs value) >>>
-        unlines
+  pretty :: JournalEntry -> String
+  pretty =
+    journalEntryFields >>>
+    toList >>>
+    map (\ (key, value) -> prettyJournalField key ++ " = " ++ cs value) >>>
+    unlines
 
 unitName :: JournalEntry -> Text
 unitName = maybe "<unknown>" (cs . show) . lookup "UNIT" . journalEntryFields
 
 prettyJournalField :: JournalField -> String
 prettyJournalField =
-    show >>>
-    drop (length ("JournalField " :: String)) >>>
-    read
+  show >>>
+  drop (length ("JournalField " :: String)) >>>
+  read
 
 
 -- utils
 
 mailFromToSubject :: Address -> [Address] -> Text -> Mail
-mailFromToSubject from to subject = (emptyMail from) 
-  { mailTo = to
-  , mailHeaders = [("Subject", subject)]
-  }
+mailFromToSubject from to subject = (emptyMail from){
+  mailTo = to,
+  mailHeaders = [("Subject", subject)]
+ }
 
 pCatMaybes :: Monad m => Pipe (Maybe a) a m ()
 pCatMaybes = do
-    mx <- await
-    forM_ mx yield
-    pCatMaybes
+  mx <- await
+  forM_ mx yield
+  pCatMaybes
 
 toEnumMaybe :: (Enum a, Bounded a) => Int -> Maybe a
 toEnumMaybe n
-    | n >= minBound && n <= maxBound = Just $ toEnum n
-    | otherwise = Nothing
+  | n >= minBound && n <= maxBound = Just $ toEnum n
+  | otherwise = Nothing
