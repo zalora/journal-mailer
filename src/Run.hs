@@ -6,8 +6,9 @@ module Run where
 import           Data.Function
 import           Network.Mail.Mime
 import           Pipes
+import           Pipes.Prelude      as P
 import           Pipes.Safe
-import           Prelude                 hiding (lookup)
+import           Prelude            hiding (lookup)
 import           System.Environment
 import           System.Exit.Compat
 import           System.IO
@@ -27,8 +28,10 @@ run = do
       (journal >-> process receivers >-> for cat (liftIO . notify))
 
 
-journal :: MonadSafe m => Producer JournalEntry m ()
-journal = openJournal [] FromEnd Nothing Nothing
+journal :: MonadSafe m => Producer JournalFields m ()
+journal =
+  openJournal [] FromEnd Nothing Nothing >->
+  P.map journalEntryFields
 
 notify :: Mail -> IO ()
 notify mail = do

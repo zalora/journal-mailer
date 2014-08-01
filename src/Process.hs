@@ -20,7 +20,7 @@ import           Systemd.Journal
 import           Text.Read               (readMaybe)
 
 
-process :: Monad m => [String] -> Pipe JournalEntry Mail m ()
+process :: Monad m => [String] -> Pipe JournalFields Mail m ()
 process receivers =
   P.map extractPriority >->
   pCatMaybes >->
@@ -30,10 +30,10 @@ process receivers =
 
 -- * journal stuff
 
-extractPriority :: JournalEntry -> Maybe (Priority, JournalEntry)
-extractPriority entry = do
-  p <- lookup "PRIORITY" (journalEntryFields entry)
-  (, entry) <$> parsePriority p
+extractPriority :: JournalFields -> Maybe (Priority, JournalFields)
+extractPriority fields = do
+  p <- lookup "PRIORITY" fields
+  (, fields) <$> parsePriority p
 
 parsePriority :: ByteString -> Maybe Priority
 parsePriority = readMaybe . cs >=> toEnumMaybe
@@ -44,20 +44,19 @@ isSevere p = fromEnum p <= fromEnum Error
 
 -- * mail stuff
 
-mkMail :: [String] -> JournalEntry -> Mail
-mkMail receivers entry =
-  addPart [plainPart $ cs (pretty entry)] $
+mkMail :: [String] -> JournalFields -> Mail
+mkMail receivers fields =
+  addPart [plainPart $ cs (pretty fields)] $
   mailFromToSubject
     (addr "devops@zalora.com")
     (map addr receivers)
-    ("epsilon: systemd unit " <> unitName entry <> " failed")
+    ("epsilon: systemd unit " <> unitName fields <> " failed")
  where
   addr :: String -> Address
   addr = Address Nothing . cs
 
-  pretty :: JournalEntry -> String
+  pretty :: JournalFields -> String
   pretty =
-    journalEntryFields >>>
     toList >>>
     map (\ (key, value) -> prettyJournalField key ++ " = " ++ cs value) >>>
     unlines
@@ -68,8 +67,8 @@ mailFromToSubject from to subject = (emptyMail from){
   mailHeaders = [("Subject", subject)]
  }
 
-unitName :: JournalEntry -> Text
-unitName = maybe "<unknown>" (cs . show) . lookup "UNIT" . journalEntryFields
+unitName :: JournalFields -> Text
+unitName = maybe "<unknown>" (cs . show) . lookup "UNIT"
 
 prettyJournalField :: JournalField -> String
 prettyJournalField =
