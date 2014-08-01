@@ -50,7 +50,7 @@ mkMail receivers fields =
   mailFromToSubject
     (addr "devops@zalora.com")
     (map addr receivers)
-    ("epsilon: systemd unit " <> unitName fields <> " failed")
+    (host fields <> ": systemd unit " <> unitName fields <> " failed")
  where
   addr :: String -> Address
   addr = Address Nothing . cs
@@ -66,6 +66,9 @@ mailFromToSubject from to subject = (emptyMail from){
   mailTo = to,
   mailHeaders = [("Subject", subject)]
  }
+
+host :: JournalFields -> Text
+host = maybe "<unknown host>" cs . lookup "_HOSTNAME"
 
 unitName :: JournalFields -> Text
 unitName = maybe "<unknown>" (cs . show) . lookup "UNIT"
