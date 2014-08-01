@@ -44,7 +44,17 @@ spec = do
             ("_HOSTNAME", "host_foo_bar") :
             []
       forM_ mails $ \ mail ->
-        getSubject mail `shouldBe` "host_foo_bar: systemd unit <unknown> failed"
+        getSubject mail `shouldBe` "host_foo_bar: error message logged to the journal"
+
+    it "reports a failing unit when it sees one" $ do
+      let mails = process' ["rec"] $
+            ("PRIORITY", "3") :
+            ("_HOSTNAME", "host_foo_baz") :
+            ("RESULT", "failed") :
+            ("UNIT", "unit_bar") :
+            []
+      forM_ mails $ \ mail ->
+        getSubject mail `shouldBe` "host_foo_baz: systemd unit \"unit_bar\": failed"
 
 
 deriving instance Show Mail
