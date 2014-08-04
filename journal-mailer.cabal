@@ -4,6 +4,7 @@ synopsis:            Sends out emails for every severe journal message
 license:             BSD3
 license-file:        LICENSE
 author:              Sönke Hahn
+copyright:           Zalora South East Asia Pte Ltd
 maintainer:          soenke.hahn@zalora.com
 category:            System
 build-type:          Simple
