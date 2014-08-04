@@ -10,6 +10,9 @@ import           Data.ByteString         (ByteString)
 import           Data.Foldable           (forM_)
 import           Data.Function
 import           Data.HashMap.Strict     (lookup, toList)
+import           Data.Maybe
+import           Data.Monoid
+import           Data.String
 import           Data.String.Conversions
 import           Data.Text               (Text)
 import           Network.Mail.Mime
@@ -52,10 +55,7 @@ mkMail receivers fields =
     (map addr receivers)
     subject
  where
-  subject = host fields <> ": " <> case lookup "UNIT" fields of
-    Nothing -> "error message logged to the journal"
-    Just unit ->
-      "systemd unit " <> cs (show unit) <> ": " <> result fields
+  subject = "error message on " <> host fields <> ": " <> messageSource fields <> outcome fields
 
   addr :: String -> Address
   addr = Address Nothing . cs
@@ -75,8 +75,18 @@ mailFromToSubject from to subject = (emptyMail from){
 host :: JournalFields -> Text
 host = maybe "<unknown host>" cs . lookup "_HOSTNAME"
 
-result :: JournalFields -> Text
-result = maybe "<unknown result>" cs . lookup "RESULT"
+messageSource :: JournalFields -> Text
+messageSource fields = cs $ fromMaybe "<unknown message source>" $
+  ((("systemd unit " <>) . addQuotes) <$> lookup "UNIT" fields) <|>
+  lookup "_COMM" fields
+
+-- | combines RESULT and MESSAGE (if they exist)
+outcome :: JournalFields -> Text
+outcome fields = cs $ case (lookup "RESULT" fields, lookup "MESSAGE" fields) of
+  (Just result, Just message) -> ": " <> result <> ": " <> message
+  (Just result, Nothing) -> ": " <> result
+  (Nothing, Just message) -> ": " <> message
+  (Nothing, Nothing) -> ""
 
 prettyJournalField :: JournalField -> String
 prettyJournalField =
@@ -97,3 +107,6 @@ toEnumMaybe :: (Enum a, Bounded a) => Int -> Maybe a
 toEnumMaybe n
   | n >= minBound && n <= maxBound = Just $ toEnum n
   | otherwise = Nothing
+
+addQuotes :: (IsString a, Monoid a) => a -> a
+addQuotes t = "\"" <> t <> "\""
