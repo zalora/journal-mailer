@@ -36,11 +36,11 @@ spec = do
 
   describe "process" $ do
     it "sends out mails for entries with priority 3" $ do
-      let mails = process' ["rec"] [("PRIORITY", "3")]
+      let mails = process' [("PRIORITY", "3")]
       mails `shouldSatisfy` (not . null)
 
     it "includes the hostname in the subject" $ do
-      let mails = process' ["rec"] $
+      let mails = process' $
             ("PRIORITY", "3") :
             ("_HOSTNAME", "host_foo_bar") :
             []
@@ -48,7 +48,7 @@ spec = do
         getSubject mail `shouldContain` "host_foo_bar"
 
     it "reports a failing unit when it sees one" $ do
-      let mails = process' ["rec"] $
+      let mails = process' $
             ("PRIORITY", "3") :
             ("_HOSTNAME", "host_foo_baz") :
             ("UNIT", "unit_bar") :
@@ -57,7 +57,7 @@ spec = do
         getSubject mail `shouldContain` "systemd unit \"unit_bar\""
 
     it "includes the RESULT field in the subject" $ do
-      let mails = process' ["rec"] $
+      let mails = process' $
             ("PRIORITY", "3") :
             ("RESULT", "bla_result") :
             []
@@ -65,7 +65,7 @@ spec = do
         getSubject mail `shouldContain` "bla_result"
 
     it "includes the _COMM field in the subject" $ do
-      let mails = process' ["rec"] $
+      let mails = process' $
             ("PRIORITY", "3") :
             ("_COMM", "sshd") :
             []
@@ -73,7 +73,7 @@ spec = do
         getSubject mail `shouldSatisfy` ("sshd" `isInfixOf`)
 
     it "includes the MESSAGE field in the subject" $ do
-      let mails = process' ["rec"] $
+      let mails = process' $
             ("PRIORITY", "3") :
             ("MESSAGE", "bla_message") :
             []
@@ -81,7 +81,7 @@ spec = do
         getSubject mail `shouldContain` "bla_message"
 
     it "includes entry fields in the body" $ do
-      let mails = process' ["rec"] $
+      let mails = process' $
             ("PRIORITY", "3") :
             ("SOME_FIELD", "some_value") :
             []
@@ -95,9 +95,11 @@ deriving instance Show Address
 deriving instance Show Part
 deriving instance Show Encoding
 
-process' :: [String] -> [(JournalField, ByteString)] -> [Mail]
-process' receivers fields =
+process' :: [(JournalField, ByteString)] -> [Mail]
+process' fields =
   P.toList (yield (fromList fields) >-> process receivers)
+ where
+  receivers = ["fakeReceivers"]
 
 getSubject :: Mail -> String
 getSubject mail =
