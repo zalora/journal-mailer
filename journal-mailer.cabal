@@ -1,6 +1,12 @@
 name:                journal-mailer
 version:             0.1.0.0
-synopsis:            Sends out emails for every severe journal message
+synopsis:            Sends out emails for every severe journal message.
+description:
+  Sends out emails for every severe journal message,
+  i.e. messages of syslog priority LOG_ERR (3) or worse.
+  .
+  See also <http://www.freedesktop.org/software/systemd/man/systemd.journal-fields.html>
+  and <http://tools.ietf.org/html/rfc5424>, page 10.
 license:             BSD3
 license-file:        LICENSE
 author:              Sönke Hahn
@@ -9,6 +15,10 @@ maintainer:          soenke.hahn@zalora.com
 category:            System
 build-type:          Simple
 cabal-version:       >=1.10
+
+source-repository head
+  type: git
+  location: https://github.com/zalora/journal-mailer.git
 
 executable journal-mailer
   main-is: Main.hs
