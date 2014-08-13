@@ -77,8 +77,9 @@ host = maybe "<unknown host>" cs . lookup "_HOSTNAME"
 
 messageSource :: JournalFields -> Text
 messageSource fields = cs $ fromMaybe "<unknown message source>" $
-  ((("systemd unit " <>) . addQuotes) <$> lookup "UNIT" fields) <|>
-  lookup "_COMM" fields
+  (((("systemd unit " <>) . addQuotes) <$> lookup "UNIT" fields) <|>
+   (lookup "_COMM" fields) <|>
+   (lookup "SYSLOG_IDENTIFIER" fields))
 
 -- | combines RESULT and MESSAGE (if they exist)
 outcome :: JournalFields -> Text

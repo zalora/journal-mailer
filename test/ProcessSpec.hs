@@ -80,6 +80,14 @@ spec = do
       forM_ mails $ \ mail ->
         getSubject mail `shouldContain` "bla_message"
 
+    it "includes SYSLOG_IDENTIFIER (as messages source) when nothing else is present" $ do
+      let mails = process' $
+            ("PRIORITY", "3") :
+            ("SYSLOG_IDENTIFIER", "foo_syslog_identifier") :
+            []
+      forM_ mails $ \ mail ->
+        getSubject mail `shouldContain` "foo_syslog_identifier"
+
     it "includes entry fields in the body" $ do
       let mails = process' $
             ("PRIORITY", "3") :
