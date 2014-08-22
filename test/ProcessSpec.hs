@@ -19,10 +19,21 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           Process
+import           Options
 
 
 main :: IO ()
 main = hspec spec
+
+options :: Options
+options = Options {
+  sender = "foo@bar",
+  receivers = ["fakeReceiver@bar"]
+ }
+
+process' :: [(JournalField, ByteString)] -> [Mail]
+process' fields =
+  P.toList (yield (fromList fields) >-> process options)
 
 spec :: Spec
 spec = do
@@ -38,6 +49,11 @@ spec = do
     it "sends out mails for entries with priority 3" $ do
       let mails = process' [("PRIORITY", "3")]
       mails `shouldSatisfy` (not . null)
+
+    it "uses the sender address provided on the command line" $ do
+      let mails = process' [("PRIORITY", "3")]
+      forM_ mails $ \ mail ->
+        getSender mail `shouldBe` "foo@bar"
 
     it "includes the hostname in the subject" $ do
       let mails = process' $
@@ -103,11 +119,8 @@ deriving instance Show Address
 deriving instance Show Part
 deriving instance Show Encoding
 
-process' :: [(JournalField, ByteString)] -> [Mail]
-process' fields =
-  P.toList (yield (fromList fields) >-> process receivers)
- where
-  receivers = ["fakeReceivers"]
+getSender :: Mail -> String
+getSender = cs . addressEmail . mailFrom
 
 getSubject :: Mail -> String
 getSubject mail =

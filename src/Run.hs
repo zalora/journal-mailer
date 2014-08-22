@@ -14,18 +14,19 @@ import           System.Exit.Compat
 import           System.IO
 import           Systemd.Journal
 
+import           Options
 import           Process
 
 
 run :: IO ()
 run = do
-  receivers <- getArgs
-  case receivers of
+  options <- getOptions
+  case receivers options of
     [] -> do
       progName <- getProgName
       die ("usage: " ++ progName ++ " EMAIL_ADDRESS...")
     _ -> runEffect $ runSafeP $
-      (journal >-> process receivers >-> for cat (liftIO . notify))
+      (journal >-> process options >-> for cat (liftIO . notify))
 
 
 journal :: MonadSafe m => Producer JournalFields m ()

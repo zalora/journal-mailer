@@ -22,13 +22,15 @@ import           Prelude                 hiding (lookup)
 import           Systemd.Journal
 import           Text.Read               (readMaybe)
 
+import           Options
 
-process :: Monad m => [String] -> Pipe JournalFields Mail m ()
-process receivers =
+
+process :: Monad m => Options -> Pipe JournalFields Mail m ()
+process options =
   P.map extractPriority >->
   pCatMaybes >->
   P.filter (isSevere . fst) >->
-  P.map (snd >>> mkMail receivers)
+  P.map (snd >>> mkMail options)
 
 
 -- * journal stuff
@@ -47,12 +49,12 @@ isSevere p = fromEnum p <= fromEnum Error
 
 -- * mail stuff
 
-mkMail :: [String] -> JournalFields -> Mail
-mkMail receivers fields =
+mkMail :: Options -> JournalFields -> Mail
+mkMail options fields =
   addPart [plainPart $ cs (pretty fields)] $
   mailFromToSubject
-    (addr "devops@zalora.com")
-    (map addr receivers)
+    (addr (sender options))
+    (map addr (receivers options))
     subject
  where
   subject = "error message on " <> host fields <> ": " <> messageSource fields <> outcome fields
