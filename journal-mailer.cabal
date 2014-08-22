@@ -1,8 +1,8 @@
 name:                journal-mailer
 version:             0.1.0.0
-synopsis:            Sends out emails for every severe journal message.
+synopsis:            Sends out emails for every severe message logged to systemd's journal.
 description:
-  Sends out emails for every severe journal message,
+  Sends out emails for every severe message logged to systemd's journal,
   i.e. messages of syslog priority LOG_ERR (3) or worse.
   .
   See also <http://www.freedesktop.org/software/systemd/man/systemd.journal-fields.html>
