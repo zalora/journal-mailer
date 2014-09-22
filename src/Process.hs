@@ -5,7 +5,7 @@ module Process where
 
 import           Control.Applicative
 import           Control.Arrow
-import           Control.Monad           hiding (forM_)
+import           Control.Monad           ((>=>))
 import           Data.ByteString         (ByteString)
 import           Data.Foldable           (forM_)
 import           Data.Function

@@ -7,10 +7,10 @@ module Options (
  ) where
 
 
-import           Control.Applicative     hiding (empty)
+import           Control.Applicative     ((<$>), (<*>), (<|>))
 import           Control.Monad
-import           Data.HashMap.Strict     as HashMap hiding (foldl', map)
-import           Data.List               hiding (union)
+import           Data.HashMap.Strict     (HashMap, empty, keys, union)
+import           Data.List               (foldl')
 import           Data.String.Conversions
 import           Data.Yaml
 import           System.Console.GetOpt
@@ -41,7 +41,7 @@ defaultConfiguration = Configuration False Nothing [] empty
 
 instance FromJSON (Configuration (Maybe String)) where
   parseJSON (Object o) = do
-    forM_ (HashMap.keys o) $ \ key ->
+    forM_ (keys o) $ \ key ->
       when (not (key `elem` ["sender", "receivers", "receiver_map"])) $
         fail ("unknown key: " ++ cs key)
     Configuration False <$>

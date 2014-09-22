@@ -6,16 +6,15 @@ module ProcessSpec where
 
 import           Data.ByteString         (ByteString)
 import           Data.Char
-import           Data.Foldable           hiding (concat)
+import           Data.Foldable           (toList)
 import           Data.HashMap.Strict     as HashMap (empty, fromList, lookup)
-import           Data.List               as List hiding (elem)
+import           Data.List               as List (isInfixOf, lookup)
 import           Data.Maybe
 import           Data.String
 import           Data.String.Conversions
 import           Network.Mail.Mime
 import           Pipes
 import qualified Pipes.Prelude           as P
-import           Prelude                 hiding (elem)
 import           Systemd.Journal
 import           Test.Hspec
 import           Test.QuickCheck
@@ -122,7 +121,7 @@ spec = do
         interested :: String -> [String]
         interested unitName = fromMaybe [] (HashMap.lookup unitName (receiverMap configWithReceiverMap))
         notInterested :: String -> [String]
-        notInterested unitName = List.filter (not . (`elem` interested unitName)) $
+        notInterested unitName = filter (not . (`elem` interested unitName)) $
           concat (toList (receiverMap configWithReceiverMap))
 
     it "sends every notification to the standard receiver" $

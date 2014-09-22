@@ -3,12 +3,10 @@
 module Run where
 
 
-import           Data.Function
 import           Network.Mail.Mime
 import           Pipes
 import           Pipes.Prelude      as P
 import           Pipes.Safe
-import           Prelude            hiding (lookup)
 import           System.Environment
 import           System.Exit.Compat
 import           System.IO
