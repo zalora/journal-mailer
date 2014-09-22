@@ -37,6 +37,14 @@ spec = do
           getConfiguration
       sender options `shouldBe` "sender@foo.com"
 
+    it "uses the last specified sender" $ do
+      options <- withArgs [
+        "--receiver", "foo@bar.com",
+        "--sender", "sender1@foo.com",
+        "--sender", "sender2@foo.com"] $
+          getConfiguration
+      sender options `shouldBe` "sender2@foo.com"
+
     it "raises an error when given useless arguments" $ do
       output <- hCapture_ [stderr] $ withArgs ["bla"] $
         (getConfiguration `shouldThrow` (/= ExitSuccess))

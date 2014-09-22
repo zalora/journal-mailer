@@ -6,6 +6,7 @@ module Options (
  ) where
 
 
+import           Control.Arrow
 import           Data.List
 import           System.Console.GetOpt
 import           System.Environment
@@ -27,7 +28,7 @@ addSender :: String -> (Configuration (Maybe String)) -> (Configuration (Maybe S
 addSender sender c = c{sender = Just sender}
 
 addReceiver :: String -> Configuration a -> Configuration a
-addReceiver r c = c{receivers = r : receivers c}
+addReceiver r c = c{receivers = receivers c ++ [r]}
 
 defaultConfiguration :: Configuration (Maybe String)
 defaultConfiguration = Configuration False Nothing []
@@ -48,7 +49,7 @@ getConfiguration = do
   case result of
     (optionMod, [], []) ->
       let config :: Configuration (Maybe String)
-          config = foldl' (.) id optionMod defaultConfiguration
+          config = foldl' (>>>) id optionMod defaultConfiguration
       in if showHelp config
         then do
           progName <- getProgName
