@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleInstances, OverloadedStrings,
+             ScopedTypeVariables #-}
 
 module Options (
   Configuration(..),
@@ -6,8 +7,12 @@ module Options (
  ) where
 
 
-import           Control.Arrow
+import           Control.Applicative
+import           Control.Monad
+import           Data.HashMap.Strict     (keys)
 import           Data.List
+import           Data.String.Conversions
+import           Data.Yaml
 import           System.Console.GetOpt
 import           System.Environment
 import           System.Exit
@@ -33,7 +38,17 @@ addReceiver r c = c{receivers = receivers c ++ [r]}
 defaultConfiguration :: Configuration (Maybe String)
 defaultConfiguration = Configuration False Nothing []
 
-type Flag = Configuration (Maybe String) -> Configuration (Maybe String)
+instance FromJSON (Configuration (Maybe String)) where
+  parseJSON (Object o) = do
+    forM_ (keys o) $ \ key ->
+      when (not (key `elem` ["sender", "receivers"])) $
+        fail ("unknown key: " ++ cs key)
+    Configuration False <$>
+      o .:? "sender" <*>
+      o .:? "receivers" .!= []
+  parseJSON _ = mzero
+
+type Flag = Configuration (Maybe String) -> IO (Configuration (Maybe String))
 
 getConfiguration :: IO (Configuration String)
 getConfiguration = do
@@ -44,13 +59,13 @@ getConfiguration = do
       receiverOption = Option ['r'] ["receiver"] (ReqArg addReceiver "ADDRESS")
         "email address that notifications will be sent to"
       options :: [OptDescr Flag]
-      options = [help, senderOption, receiverOption]
+      options = map (fmap (return .)) [help, senderOption, receiverOption] ++ [configFileOption]
       result = getOpt Permute options args
   case result of
-    (optionMod, [], []) ->
-      let config :: Configuration (Maybe String)
-          config = foldl' (>>>) id optionMod defaultConfiguration
-      in if showHelp config
+    (optionMods, [], []) -> do
+      config :: Configuration (Maybe String)
+        <- foldl' (>=>) return optionMods defaultConfiguration
+      if showHelp config
         then do
           progName <- getProgName
           putStr (usageInfo (header progName) options)
@@ -70,3 +85,23 @@ header progName = unlines $
   (progName ++ " 0.1.0.0") :
   "Sends out emails for every severe message logged to systemd's journal." :
   []
+
+configFileOption :: OptDescr Flag
+configFileOption = Option ['h'] ["config"] (ReqArg addConfig "FILE")
+  "configuration file"
+
+addConfig :: FilePath -> Flag
+addConfig configFile input = do
+  fileConfig :: Configuration (Maybe String) <- abortOnError =<< decodeFileEither configFile
+  return $ Configuration {
+    showHelp = showHelp input || showHelp fileConfig,
+    sender = sender fileConfig <|> sender input,
+    receivers = receivers input ++ receivers fileConfig
+   }
+ where
+  abortOnError :: Either ParseException a -> IO a
+  abortOnError x = case x of
+    Left e -> do
+      hPutStrLn stderr (show e)
+      exitWith $ ExitFailure 1
+    Right x -> return x

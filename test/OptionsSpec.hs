@@ -6,6 +6,7 @@ import           System.Environment
 import           System.Exit
 import           System.IO
 import           System.IO.Silently
+import           System.IO.Temp
 import           Test.Hspec
 
 import           Options
@@ -49,3 +50,28 @@ spec = do
       output <- hCapture_ [stderr] $ withArgs ["bla"] $
         (getConfiguration `shouldThrow` (/= ExitSuccess))
       lines output `shouldContain` ["unused argument: bla"]
+
+    let configFileContents :: String
+        configFileContents = "\
+          \sender: sender@example.com\n\
+          \receivers:\n\
+          \  - receiver1@example.com\n\
+          \  - receiver2@example.com\n"
+
+    it "reads a configuration from a config file specified with --config" $ do
+      withSystemTempFile "journal-mailer-test-suite" $ \ configFile handle -> do
+        hPutStr handle configFileContents
+        hClose handle
+        options <- withArgs ["--config", configFile] $ getConfiguration
+        options `shouldBe` Configuration {
+          showHelp = False,
+          sender = "sender@example.com",
+          receivers =
+            "receiver1@example.com" :
+            "receiver2@example.com" :
+            []
+         }
+
+    it "parses the example configuration successfully" $ do
+      _ <- withArgs ["--config", "journal-mailer.config.example"] $ getConfiguration
+      return ()

@@ -1,0 +1,4 @@
+sender: sender@example.com"
+receivers:
+  - receiver1@example.com
+  - receiver2@example.com

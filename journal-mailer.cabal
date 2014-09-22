@@ -32,7 +32,8 @@ executable journal-mailer
     bytestring,
     string-conversions,
     mime-mail,
-    text
+    text,
+    yaml
   hs-source-dirs: src
   default-language: Haskell2010
   ghc-options:
@@ -56,7 +57,9 @@ test-suite spec
     string-conversions,
     mime-mail,
     text,
+    yaml,
 
     hspec,
     QuickCheck,
-    silently
+    silently,
+    temporary
