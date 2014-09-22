@@ -59,4 +59,3 @@ header progName = unlines $
   (progName ++ " 0.1.0.0") :
   "Sends out emails for every severe message logged to systemd's journal." :
   []
-
