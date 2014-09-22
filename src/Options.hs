@@ -1,55 +1,59 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Options (
-  Options(..),
-  getOptions,
+  Configuration(..),
+  getConfiguration,
  ) where
 
 
+import           Data.List
 import           System.Console.GetOpt
 import           System.Environment
 import           System.Exit
 import           System.IO
 
 
-data Options = Options {
-  sender :: String,
+data Configuration sender = Configuration {
+  showHelp :: Bool,
+  sender :: sender,
   receivers :: [String]
  }
   deriving (Show, Eq, Ord)
 
+setShowHelp :: Configuration a -> Configuration a
+setShowHelp c = c{showHelp = True}
 
-data Flag
-  = Help
-  | Sender String
- deriving (Show, Eq, Ord)
+addSender :: String -> (Configuration (Maybe String)) -> (Configuration (Maybe String))
+addSender sender c = c{sender = Just sender}
 
-isSender :: Flag -> Bool
-isSender Sender{} = True
-isSender _ = False
+defaultConfiguration :: Configuration (Maybe String)
+defaultConfiguration = Configuration False Nothing []
 
-getOptions :: IO Options
-getOptions = do
+type Flag = Configuration (Maybe String) -> Configuration (Maybe String)
+
+getConfiguration :: IO (Configuration String)
+getConfiguration = do
   args <- getArgs
-  let help = Option ['h'] ["help"] (NoArg Help) "print this help"
-      sender = Option [] ["sender"] (ReqArg Sender "ADDRESS")
+  let help = Option ['h'] ["help"] (NoArg setShowHelp) "print this help"
+      senderOption = Option [] ["sender"] (ReqArg addSender "ADDRESS")
         "email address that will be used as the sender"
-      options = [help, sender]
+      options :: [OptDescr Flag]
+      options = [help, senderOption]
       result = getOpt Permute options args
   case result of
-    (flags, arguments, []) -> if Help `elem` flags
-      then do
-        progName <- getProgName
-        putStr (usageInfo (header progName) options)
-        exitWith ExitSuccess
-      else case filter isSender flags of
-        [Sender sender] -> return $ Options sender arguments
-        [] -> do
-          hPutStrLn stderr "no --sender given"
-          exitWith $ ExitFailure 1
-        _ -> do
-          hPutStrLn stderr "multiple --sender flags not allowed"
-          exitWith $ ExitFailure 1
+    (optionMod, arguments, []) ->
+      let config :: Configuration (Maybe String)
+          config = foldl' (.) id optionMod defaultConfiguration
+      in if showHelp config
+        then do
+          progName <- getProgName
+          putStr (usageInfo (header progName) options)
+          exitWith ExitSuccess
+        else case sender config of
+          Just sender -> return $ Configuration False sender arguments
+          Nothing -> do
+            hPutStrLn stderr "no --sender given"
+            exitWith $ ExitFailure 1
     (_, _, errors) -> do
       hPutStr stderr $ concat errors
       exitWith $ ExitFailure 1

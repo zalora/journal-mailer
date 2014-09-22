@@ -25,7 +25,7 @@ import           Text.Read               (readMaybe)
 import           Options
 
 
-process :: Monad m => Options -> Pipe JournalFields Mail m ()
+process :: Monad m => Configuration String -> Pipe JournalFields Mail m ()
 process options =
   P.map extractPriority >->
   pCatMaybes >->
@@ -49,7 +49,7 @@ isSevere p = fromEnum p <= fromEnum Error
 
 -- * mail stuff
 
-mkMail :: Options -> JournalFields -> Mail
+mkMail :: Configuration String -> JournalFields -> Mail
 mkMail options fields =
   addPart [plainPart $ cs (pretty fields)] $
   mailFromToSubject

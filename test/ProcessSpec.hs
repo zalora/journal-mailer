@@ -25,8 +25,9 @@ import           Options
 main :: IO ()
 main = hspec spec
 
-options :: Options
-options = Options {
+options :: Configuration String
+options = Configuration {
+  showHelp = False,
   sender = "foo@bar",
   receivers = ["fakeReceiver@bar"]
  }

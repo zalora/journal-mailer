@@ -20,7 +20,7 @@ import           Process
 
 run :: IO ()
 run = do
-  options <- getOptions
+  options <- getConfiguration
   case receivers options of
     [] -> do
       progName <- getProgName
