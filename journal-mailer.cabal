@@ -58,4 +58,5 @@ test-suite spec
     text,
 
     hspec,
-    QuickCheck
+    QuickCheck,
+    silently

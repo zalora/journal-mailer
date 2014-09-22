@@ -26,6 +26,9 @@ setShowHelp c = c{showHelp = True}
 addSender :: String -> (Configuration (Maybe String)) -> (Configuration (Maybe String))
 addSender sender c = c{sender = Just sender}
 
+addReceiver :: String -> Configuration a -> Configuration a
+addReceiver r c = c{receivers = r : receivers c}
+
 defaultConfiguration :: Configuration (Maybe String)
 defaultConfiguration = Configuration False Nothing []
 
@@ -37,11 +40,13 @@ getConfiguration = do
   let help = Option ['h'] ["help"] (NoArg setShowHelp) "print this help"
       senderOption = Option [] ["sender"] (ReqArg addSender "ADDRESS")
         "email address that will be used as the sender"
+      receiverOption = Option ['r'] ["receiver"] (ReqArg addReceiver "ADDRESS")
+        "email address that notifications will be sent to"
       options :: [OptDescr Flag]
-      options = [help, senderOption]
+      options = [help, senderOption, receiverOption]
       result = getOpt Permute options args
   case result of
-    (optionMod, arguments, []) ->
+    (optionMod, [], []) ->
       let config :: Configuration (Maybe String)
           config = foldl' (.) id optionMod defaultConfiguration
       in if showHelp config
@@ -50,12 +55,13 @@ getConfiguration = do
           putStr (usageInfo (header progName) options)
           exitWith ExitSuccess
         else case sender config of
-          Just sender -> return $ Configuration False sender arguments
+          Just sender -> return $ Configuration False sender (receivers config)
           Nothing -> do
             hPutStrLn stderr "no --sender given"
             exitWith $ ExitFailure 1
-    (_, _, errors) -> do
-      hPutStr stderr $ concat errors
+    (_, arguments, errors) -> do
+      hPutStr stderr $ concat (errors ++
+        map (\ arg -> "unused argument: " ++ arg ++ "\n") arguments)
       exitWith $ ExitFailure 1
 
 header :: String -> String
