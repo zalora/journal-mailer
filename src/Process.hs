@@ -54,10 +54,14 @@ mkMail options fields =
   addPart [plainPart $ cs (pretty fields)] $
   mailFromToSubject
     (addr (sender options))
-    (map addr (receivers options))
+    (map addr mailReceivers)
     subject
  where
-  subject = "error message on " <> host fields <> ": " <> messageSource fields <> outcome fields
+  messageSource = getMessageSource fields
+  mailReceivers = receivers options ++ fromMaybe [] (do
+    sourceName <- messageSourceName messageSource
+    lookup sourceName (receiverMap options))
+  subject = "error message on " <> host fields <> ": " <> showMessageSource messageSource <> outcome fields
 
   addr :: String -> Address
   addr = Address Nothing . cs
@@ -77,11 +81,26 @@ mailFromToSubject from to subject = (emptyMail from){
 host :: JournalFields -> Text
 host = maybe "<unknown host>" cs . lookup "_HOSTNAME"
 
-messageSource :: JournalFields -> Text
-messageSource fields = cs $ fromMaybe "<unknown message source>" $
-  (((("systemd unit " <>) . addQuotes) <$> lookup "UNIT" fields) <|>
-   (lookup "_COMM" fields) <|>
-   (lookup "SYSLOG_IDENTIFIER" fields))
+data MessageSource
+  = Unit String
+  | UnknownType String
+  | UnknownSource
+
+messageSourceName :: MessageSource -> Maybe String
+messageSourceName (Unit name) = Just name
+messageSourceName (UnknownType name) = Just name
+messageSourceName UnknownSource = Nothing
+
+showMessageSource :: MessageSource -> Text
+showMessageSource (Unit name) = "systemd unit " <> cs (addQuotes name)
+showMessageSource (UnknownType name) = cs name
+showMessageSource UnknownSource = "<unknown message source>"
+
+getMessageSource :: JournalFields -> MessageSource
+getMessageSource fields = fromMaybe UnknownSource $
+  ((Unit . cs <$> lookup "UNIT" fields) <|>
+   (UnknownType . cs <$> lookup "_COMM" fields) <|>
+   (UnknownType . cs <$> lookup "SYSLOG_IDENTIFIER" fields))
 
 -- | combines RESULT and MESSAGE (if they exist)
 outcome :: JournalFields -> Text

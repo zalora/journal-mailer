@@ -7,10 +7,10 @@ module Options (
  ) where
 
 
-import           Control.Applicative
+import           Control.Applicative     hiding (empty)
 import           Control.Monad
-import           Data.HashMap.Strict     (keys)
-import           Data.List
+import           Data.HashMap.Strict     as HashMap hiding (foldl', map)
+import           Data.List               hiding (union)
 import           Data.String.Conversions
 import           Data.Yaml
 import           System.Console.GetOpt
@@ -22,9 +22,10 @@ import           System.IO
 data Configuration sender = Configuration {
   showHelp :: Bool,
   sender :: sender,
-  receivers :: [String]
+  receivers :: [String],
+  receiverMap :: HashMap String [String] -- mapping from units to receivers' email addresses
  }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
 setShowHelp :: Configuration a -> Configuration a
 setShowHelp c = c{showHelp = True}
@@ -36,16 +37,17 @@ addReceiver :: String -> Configuration a -> Configuration a
 addReceiver r c = c{receivers = receivers c ++ [r]}
 
 defaultConfiguration :: Configuration (Maybe String)
-defaultConfiguration = Configuration False Nothing []
+defaultConfiguration = Configuration False Nothing [] empty
 
 instance FromJSON (Configuration (Maybe String)) where
   parseJSON (Object o) = do
-    forM_ (keys o) $ \ key ->
-      when (not (key `elem` ["sender", "receivers"])) $
+    forM_ (HashMap.keys o) $ \ key ->
+      when (not (key `elem` ["sender", "receivers", "receiver_map"])) $
         fail ("unknown key: " ++ cs key)
     Configuration False <$>
       o .:? "sender" <*>
-      o .:? "receivers" .!= []
+      o .:? "receivers" .!= [] <*>
+      o .:? "receiver_map" .!= empty
   parseJSON _ = mzero
 
 type Flag = Configuration (Maybe String) -> IO (Configuration (Maybe String))
@@ -71,7 +73,8 @@ getConfiguration = do
           putStr (usageInfo (header progName) options)
           exitWith ExitSuccess
         else case sender config of
-          Just sender -> return $ Configuration False sender (receivers config)
+          Just sender -> return $
+            Configuration False sender (receivers config) (receiverMap config)
           Nothing -> do
             hPutStrLn stderr "no --sender given"
             exitWith $ ExitFailure 1
@@ -96,7 +99,8 @@ addConfig configFile input = do
   return $ Configuration {
     showHelp = showHelp input || showHelp fileConfig,
     sender = sender fileConfig <|> sender input,
-    receivers = receivers input ++ receivers fileConfig
+    receivers = receivers input ++ receivers fileConfig,
+    receiverMap = receiverMap fileConfig `union` receiverMap input
    }
  where
   abortOnError :: Either ParseException a -> IO a

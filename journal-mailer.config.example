@@ -2,3 +2,10 @@ sender: sender@example.com"
 receivers:
   - receiver1@example.com
   - receiver2@example.com
+
+receiver_map:
+  sshd:
+    - special@example.com
+    - someone@example.com
+  someunit:
+    - someone@example.com

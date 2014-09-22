@@ -2,6 +2,7 @@
 module OptionsSpec where
 
 
+import           Data.HashMap.Strict as HashMap
 import           System.Environment
 import           System.Exit
 import           System.IO
@@ -51,8 +52,8 @@ spec = do
         (getConfiguration `shouldThrow` (/= ExitSuccess))
       lines output `shouldContain` ["unused argument: bla"]
 
-    let configFileContents :: String
-        configFileContents = "\
+    let configFileYaml :: String
+        configFileYaml = "\
           \sender: sender@example.com\n\
           \receivers:\n\
           \  - receiver1@example.com\n\
@@ -60,7 +61,7 @@ spec = do
 
     it "reads a configuration from a config file specified with --config" $ do
       withSystemTempFile "journal-mailer-test-suite" $ \ configFile handle -> do
-        hPutStr handle configFileContents
+        hPutStr handle configFileYaml
         hClose handle
         options <- withArgs ["--config", configFile] $ getConfiguration
         options `shouldBe` Configuration {
@@ -69,9 +70,28 @@ spec = do
           receivers =
             "receiver1@example.com" :
             "receiver2@example.com" :
-            []
+            [],
+          receiverMap = empty
          }
 
     it "parses the example configuration successfully" $ do
       _ <- withArgs ["--config", "journal-mailer.config.example"] $ getConfiguration
       return ()
+
+    let receiverMapYaml = "\
+      \receiver_map:\n\
+      \  sshd:\n\
+      \    - special@example.com\n\
+      \    - someone@example.com\n\
+      \  someunit:\n\
+      \    - someone@example.com\n"
+
+    it "allows to specify receivers for single message sources" $ do
+      withSystemTempFile "journal-mailer-test-suite" $ \ configFile handle -> do
+        hPutStr handle (configFileYaml ++ receiverMapYaml)
+        hClose handle
+        options <- withArgs ["--config", configFile] $ getConfiguration
+        receiverMap options `shouldBe` fromList (
+          ("sshd", ["special@example.com", "someone@example.com"]) :
+          ("someunit", ["someone@example.com"]) :
+          [])
