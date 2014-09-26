@@ -58,9 +58,7 @@ mkMail options fields =
     subject
  where
   messageSource = getMessageSource fields
-  mailReceivers = receivers options ++ fromMaybe [] (do
-    sourceName <- messageSourceName messageSource
-    lookup sourceName (receiverMap options))
+  mailReceivers = lookupReceivers (messageSourceName messageSource) options
   subject = "error message on " <> host fields <> ": " <> showMessageSource messageSource <> outcome fields
 
   addr :: String -> Address

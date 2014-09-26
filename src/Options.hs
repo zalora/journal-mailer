@@ -3,16 +3,19 @@
 
 module Options (
   Configuration(..),
+  lookupReceivers,
   getConfiguration,
  ) where
 
 
 import           Control.Applicative     ((<$>), (<*>), (<|>))
 import           Control.Monad
-import           Data.HashMap.Strict     (HashMap, empty, keys, union)
-import           Data.List               (foldl')
+import           Data.HashMap.Strict     (HashMap, empty, keys, lookup, union)
+import           Data.List               (foldl', isSuffixOf)
+import           Data.Maybe
 import           Data.String.Conversions
 import           Data.Yaml
+import           Prelude                 hiding (lookup)
 import           System.Console.GetOpt
 import           System.Environment
 import           System.Exit
@@ -49,6 +52,26 @@ instance FromJSON (Configuration (Maybe String)) where
       o .:? "receivers" .!= [] <*>
       o .:? "receiver_map" .!= empty
   parseJSON _ = mzero
+
+lookupReceivers :: Maybe String -> Configuration a -> [String]
+lookupReceivers mMessageSource configuration = receivers configuration ++ interested
+ where
+  interested = case mMessageSource of
+    Nothing -> []
+    Just messageSource ->
+      fromMaybe [] (lookup messageSource (receiverMap configuration)) ++
+      if ".service" `isSuffixOf` messageSource
+        then fromMaybe []
+          (lookup
+            (dropAtEnd (length (".service" :: String)) messageSource)
+            (receiverMap configuration))
+        else []
+
+dropAtEnd :: Int -> [a] -> [a]
+dropAtEnd n = reverse . drop n . reverse
+
+
+-- * configuration loading
 
 type Flag = Configuration (Maybe String) -> IO (Configuration (Maybe String))
 

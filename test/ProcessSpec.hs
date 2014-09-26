@@ -160,6 +160,21 @@ spec = do
                 []
           in not (receiver `elem` getReceivers mail)
 
+    it "does send mails to people interested in 'UNIT_NAME', when receiving \
+       \messages from 'UNIT_NAME.service'" $
+      property $
+      forAll (elements unitKeys) $ \ unitKey ->
+      forAll (elements ["unit1", "unit2"]) $ \ unitName ->
+      forAll (elements (interested unitName)) $
+        \ receiver ->
+          let mail = process'' configWithReceiverMap $
+                ("PRIORITY", "3") :
+                (unitKey, cs unitName <> ".service") :
+                []
+          in counterexample (show mail) $
+             counterexample (show (receiverMap configWithReceiverMap)) $
+             receiver `elem` getReceivers mail
+
 
 deriving instance Show Mail
 deriving instance Show Address
