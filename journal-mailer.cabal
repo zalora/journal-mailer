@@ -1,5 +1,5 @@
 name:                journal-mailer
-version:             0.1.0.0
+version:             0.1.1.0
 synopsis:            Sends out emails for every severe message logged to systemd's journal.
 description:
   Sends out emails for every severe message logged to systemd's journal,

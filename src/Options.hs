@@ -108,7 +108,7 @@ getConfiguration = do
 
 header :: String -> String
 header progName = unlines $
-  (progName ++ " 0.1.0.0") :
+  (progName ++ " 0.1.1.0") :
   "Sends out emails for every severe message logged to systemd's journal." :
   []
 
