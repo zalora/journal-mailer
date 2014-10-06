@@ -23,7 +23,7 @@ source-repository head
 executable journal-mailer
   main-is: Main.hs
   build-depends:
-    base == 4.*,
+    base >= 4.7,
     base-compat,
     libsystemd-journal,
     pipes,
