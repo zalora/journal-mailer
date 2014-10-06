@@ -113,7 +113,7 @@ header progName = unlines $
   []
 
 configFileOption :: OptDescr Flag
-configFileOption = Option ['h'] ["config"] (ReqArg addConfig "FILE")
+configFileOption = Option ['c'] ["config"] (ReqArg addConfig "FILE")
   "configuration file"
 
 addConfig :: FilePath -> Flag
