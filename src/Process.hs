@@ -15,6 +15,8 @@ import           Data.Monoid
 import           Data.String
 import           Data.String.Conversions
 import           Data.Text               (Text)
+import           Data.Time.Clock         (UTCTime)
+import           Data.Time.Clock.POSIX   (posixSecondsToUTCTime)
 import           Network.Mail.Mime
 import           Pipes
 import qualified Pipes.Prelude           as P
@@ -59,7 +61,10 @@ mkMail options fields =
  where
   messageSource = getMessageSource fields
   mailReceivers = lookupReceivers (messageSourceName messageSource) options
-  subject = "error message on " <> host fields <> ": " <> showMessageSource messageSource <> outcome fields
+  date = maybe "<unknown date>" show $ utcTime fields
+  subject = cs date
+         <> ": error message on " <> host fields <> ": "
+         <> showMessageSource messageSource <> outcome fields
 
   addr :: String -> Address
   addr = Address Nothing . cs
@@ -78,6 +83,11 @@ mailFromToSubject from to subject = (emptyMail from){
 
 host :: JournalFields -> Text
 host = maybe "<unknown host>" cs . lookup "_HOSTNAME"
+
+utcTime :: JournalFields -> Maybe UTCTime
+utcTime jf = posixSecondsToUTCTime . (/ 1000000) . fromInteger . read . cs <$>
+             lookup "_SOURCE_REALTIME_TIMESTAMP" jf
+
 
 data MessageSource
   = Unit String
