@@ -4,6 +4,7 @@
 module ProcessSpec where
 
 
+import           Control.Monad.Identity  (Identity(..))
 import           Data.ByteString         (ByteString)
 import           Data.Char
 import           Data.Foldable           (toList)
@@ -31,7 +32,8 @@ options = Configuration {
   showHelp = False,
   sender = "foo@bar",
   receivers = ["fakeReceiver@bar"],
-  receiverMap = empty
+  receiverMap = empty,
+  contextInterval = Just 5
  }
 
 process' :: [(JournalField, ByteString)] -> Mail
@@ -39,7 +41,7 @@ process' = process'' options
 
 process'' :: Configuration String -> [(JournalField, ByteString)] -> Mail
 process'' config fields =
-  case P.toList (yield (HashMap.fromList fields) >-> process config) of
+  case P.toList (yield (HashMap.fromList fields) >-> process config mockJournal) of
     [mail] -> mail
     [] -> error "process'': no mail"
     _ -> error "process'': more than one mail"
@@ -117,6 +119,13 @@ spec = do
       getBody mail `shouldContain` "SOME_FIELD"
       getBody mail `shouldContain` "some_value"
 
+    it "contains the messages preceding the error in the same unit" $ do
+      let mail = process' $
+            ("PRIORITY", "3") :
+            ("UNIT", "some_unit") :
+            ("_SOURCE_REALTIME_TIMESTAMP", "1414419737000000") :
+            []
+      getBody mail `shouldContain` "Oct 27 11:49:53 host executable[1557]:"
 
     let unitKeys = ["SYSLOG_IDENTIFIER", "_COMM", "UNIT"]
         configWithReceiverMap = options{
@@ -203,3 +212,30 @@ getBody :: Mail -> String
 getBody mail = case mailParts mail of
   [[body]] -> cs $ partContent body
   _ -> error "cannot extract body from parts in mail: " ++ show (mailParts mail)
+
+
+
+mockJournal :: GetsJournal Identity
+mockJournal _ _ _ =  Identity $ Just msg
+  where
+    msg = unlines [ "-- Logs begin at Mon 2014-10-20 12:35:49 UTC, end at Mon 2014-10-27 12:13:27 UTC. --"
+                  , "Oct 27 11:49:49 host executable[1557]:"
+                  , "Oct 27 11:49:49 host executable[1557]: 'l(a' - e. e. cummings"
+                  , "Oct 27 11:49:50 host executable[1557]:"
+                  , "Oct 27 11:49:50 host executable[1557]:"
+                  , "Oct 27 11:49:50 host executable[1557]: l(a"
+                  , "Oct 27 11:49:50 host executable[1557]:"
+                  , "Oct 27 11:49:50 host executable[1557]: le"
+                  , "Oct 27 11:49:51 host executable[1557]: af"
+                  , "Oct 27 11:49:51 host executable[1557]: fa"
+                  , "Oct 27 11:49:51 host executable[1557]:"
+                  , "Oct 27 11:49:51 host executable[1557]: ll"
+                  , "Oct 27 11:49:51 host executable[1557]:"
+                  , "Oct 27 11:49:52 host executable[1557]: s)"
+                  , "Oct 27 11:49:52 host executable[1557]: one"
+                  , "Oct 27 11:49:52 host executable[1557]: l"
+                  , "Oct 27 11:49:53 host executable[1557]:"
+                  , "Oct 27 11:49:53 host executable[1557]: iness"
+                  , "Oct 27 11:49:53 host executable[1557]:"
+                  ]
+

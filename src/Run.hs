@@ -24,7 +24,7 @@ run = do
       progName <- getProgName
       die ("usage: " ++ progName ++ " EMAIL_ADDRESS...")
     _ -> runEffect $ runSafeP $
-      (journal >-> process options >-> for cat (liftIO . notify))
+      (journal >-> process options ioJournal >-> for cat (liftIO . notify))
 
 
 journal :: MonadSafe m => Producer JournalFields m ()

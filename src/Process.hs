@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 
 module Process where
@@ -5,7 +6,7 @@ module Process where
 
 import           Control.Applicative
 import           Control.Arrow
-import           Control.Monad           ((>=>))
+import           Control.Monad           ((>=>), join)
 import           Data.ByteString         (ByteString)
 import           Data.Foldable           (forM_)
 import           Data.Function
@@ -14,26 +15,27 @@ import           Data.Maybe
 import           Data.Monoid
 import           Data.String
 import           Data.String.Conversions
+import           Data.Traversable        (sequenceA)
 import           Data.Text               (Text)
-import           Data.Time.Clock         (UTCTime)
+import           Data.Time.Clock         (UTCTime, addUTCTime)
 import           Data.Time.Clock.POSIX   (posixSecondsToUTCTime)
+import           GHC.IO.Exception        (ExitCode(..))
 import           Network.Mail.Mime
 import           Pipes
 import qualified Pipes.Prelude           as P
 import           Prelude                 hiding (lookup)
 import           Systemd.Journal
+import           System.Process          (readProcessWithExitCode)
 import           Text.Read               (readMaybe)
 
 import           Options
 
-
-process :: Monad m => Configuration String -> Pipe JournalFields Mail m ()
-process options =
+process :: (Applicative m, Monad m) => Configuration String -> GetsJournal m -> Pipe JournalFields Mail m ()
+process options jget =
   P.map extractPriority >->
   pCatMaybes >->
   P.filter (isSevere . fst) >->
-  P.map (snd >>> mkMail options)
-
+  P.mapM (snd >>> mkMail options jget)
 
 -- * journal stuff
 
@@ -49,15 +51,52 @@ isSevere :: Priority -> Bool
 isSevere p = fromEnum p <= fromEnum Error
 
 
+type GetsJournal m = MessageSource
+                  -> UTCTime        -- start time
+                  -> UTCTime        -- end time
+                  -> m (Maybe String)
+
+
+-- | Attempt to get information about context around an entry
+mkContextInfo :: (Applicative m, Monad m) => Configuration a
+                                          -> JournalFields
+                                          -> GetsJournal m
+                                          -> m (Maybe String)
+mkContextInfo cfg fields gj = join <$> sequenceA (gj source <$> t' <*> t)
+  where
+    source = getMessageSource fields
+    t      = utcTime fields
+    t'     = addUTCTime
+         <$> fmap (negate . fromInteger) (contextInterval cfg)
+         <*> t
+
+ioJournal :: MonadIO m => GetsJournal m
+ioJournal (Unit source) start end = do
+  let args = [ "-u", source
+             , "--since=" ++ takeWhile (/= '.') (show start)
+             , "--until=" ++ takeWhile (/= '.') (show end)
+             , "--no-pager"
+             ]
+  (e, stdout, _) <- liftIO $ readProcessWithExitCode "journalctl" args ""
+  case e of
+    ExitSuccess -> return $ Just stdout
+    _           -> return Nothing
+ioJournal _ _ _ = return Nothing
+
 -- * mail stuff
 
-mkMail :: Configuration String -> JournalFields -> Mail
-mkMail options fields =
-  addPart [plainPart $ cs (pretty fields)] $
-  mailFromToSubject
-    (addr (sender options))
-    (map addr mailReceivers)
-    subject
+mkMail :: (Applicative m, Monad m) => Configuration String
+                                   -> GetsJournal m
+                                   -> JournalFields
+                                   -> m Mail
+mkMail options jget fields = do
+  ctx <- mkContextInfo options fields jget
+  let cts = fromMaybe "<no context available>" ctx
+  return (addPart [plainPart $ cs (pretty fields ++ "\n" ++ cts)] $
+                   mailFromToSubject
+                     (addr (sender options))
+                     (map addr mailReceivers)
+                     subject)
  where
   messageSource = getMessageSource fields
   mailReceivers = lookupReceivers (messageSourceName messageSource) options

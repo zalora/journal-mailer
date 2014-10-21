@@ -9,3 +9,5 @@ receiver_map:
     - someone@example.com
   someunit:
     - someone@example.com
+
+interval: 2
