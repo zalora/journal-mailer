@@ -1,4 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 
 module Process where
@@ -62,13 +61,13 @@ mkContextInfo :: (Applicative m, Monad m) => Configuration a
                                           -> JournalFields
                                           -> GetsJournal m
                                           -> m (Maybe String)
-mkContextInfo cfg fields gj = join <$> sequenceA (gj source <$> t' <*> t)
+mkContextInfo cfg fields gj = join <$> sequenceA (gj source <$> from <*> until)
   where
     source = getMessageSource fields
-    t      = utcTime fields
-    t'     = addUTCTime
+    until  = utcTime fields
+    from   = addUTCTime
          <$> fmap (negate . fromInteger) (contextInterval cfg)
-         <*> t
+         <*> until
 
 ioJournal :: MonadIO m => GetsJournal m
 ioJournal (Unit source) start end = do
