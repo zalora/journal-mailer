@@ -127,7 +127,7 @@ addConfig configFile input = do
     sender = sender fileConfig <|> sender input,
     receivers = receivers input ++ receivers fileConfig,
     receiverMap = receiverMap fileConfig `union` receiverMap input,
-    contextInterval = contextInterval fileConfig <|> contextInterval input
+    contextInterval = contextInterval input <|> contextInterval fileConfig
    }
  where
   abortOnError :: Either ParseException a -> IO a
