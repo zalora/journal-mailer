@@ -91,7 +91,7 @@ mkMail :: (Applicative m, Monad m) => Configuration String
 mkMail options jget fields = do
   ctx <- mkContextInfo options fields jget
   let cts = fromMaybe "<no context available>" ctx
-  return (addPart [plainPart $ cs (pretty fields ++ "\n" ++ cts)] $
+  return (addPart [plainPart $ cs (date ++ pretty fields ++ "\n" ++ cts)] $
                    mailFromToSubject
                      (addr (sender options))
                      (map addr mailReceivers)
@@ -99,9 +99,8 @@ mkMail options jget fields = do
  where
   messageSource = getMessageSource fields
   mailReceivers = lookupReceivers (messageSourceName messageSource) options
-  date = maybe "<unknown date>" show $ utcTime fields
-  subject = cs date
-         <> ": error message on " <> host fields <> ": "
+  date = "On " <> maybe "<unknown date>" show (utcTime fields) <> ":\n\n"
+  subject = "error message on " <> host fields <> ": "
          <> showMessageSource messageSource <> outcome fields
 
   addr :: String -> Address
@@ -123,9 +122,11 @@ host :: JournalFields -> Text
 host = maybe "<unknown host>" cs . lookup "_HOSTNAME"
 
 utcTime :: JournalFields -> Maybe UTCTime
-utcTime jf = posixSecondsToUTCTime . (/ 1000000) . fromInteger . read . cs <$>
-             lookup "_SOURCE_REALTIME_TIMESTAMP" jf
-
+utcTime jf = do
+        let toSec y = y `div` 10 ^ (6::Int)
+        msrt <- lookup "_SOURCE_REALTIME_TIMESTAMP" jf
+        micros <- readMaybe $ cs msrt
+        return . posixSecondsToUTCTime . fromInteger . toSec $ micros
 
 data MessageSource
   = Unit String

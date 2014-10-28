@@ -90,12 +90,12 @@ spec = do
             []
       getSubject mail `shouldSatisfy` ("sshd" `isInfixOf`)
 
-    it "includes the parsed _SOURCE_REALTIME_TIMESTAMP field in the subject" $ do
+    it "includes the parsed _SOURCE_REALTIME_TIMESTAMP field in the body" $ do
       let mail = process' $
             ("PRIORITY", "3") :
-            ("_SOURCE_REALTIME_TIMESTAMP", "1413551550000000") :
+            ("_SOURCE_REALTIME_TIMESTAMP", "1413551550000001") :
             []
-      getSubject mail `shouldContain` "2014-10-17 13:12:30 UTC"
+      getBody mail `shouldContain` "2014-10-17 13:12:30 UTC"
 
     it "includes the MESSAGE field in the subject" $ do
       let mail = process' $
