@@ -46,13 +46,13 @@ defaultConfiguration = Configuration False Nothing [] empty (Just 5)
 instance FromJSON (Configuration (Maybe String)) where
   parseJSON (Object o) = do
     forM_ (keys o) $ \ key ->
-      when (not (key `elem` ["sender", "receivers", "receiver_map", "interval"])) $
+      when (not (key `elem` ["sender", "receivers", "receiver_map", "context_interval"])) $
         fail ("unknown key: " ++ cs key)
     Configuration False <$>
       o .:? "sender" <*>
       o .:? "receivers" .!= [] <*>
       o .:? "receiver_map" .!= empty <*>
-      o .:? "interval"
+      o .:? "context_interval"
   parseJSON _ = mzero
 
 lookupReceivers :: Maybe String -> Configuration a -> [String]
