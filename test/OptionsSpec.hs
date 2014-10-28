@@ -73,7 +73,7 @@ spec = do
             "receiver2@example.com" :
             [],
           receiverMap = empty,
-          contextInterval = Just 2
+          contextInterval = Just 5
          }
 
     it "parses the example configuration successfully" $ do

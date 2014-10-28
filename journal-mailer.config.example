@@ -10,4 +10,5 @@ receiver_map:
   someunit:
     - someone@example.com
 
-interval: 2
+interval: 5  # how many seconds of previous logs from the unit to include
+
