@@ -9,3 +9,6 @@ receiver_map:
     - someone@example.com
   someunit:
     - someone@example.com
+
+context_interval: 5  # how many seconds of previous logs from the unit to include
+

@@ -57,7 +57,8 @@ spec = do
           \sender: sender@example.com\n\
           \receivers:\n\
           \  - receiver1@example.com\n\
-          \  - receiver2@example.com\n"
+          \  - receiver2@example.com\n\
+          \context_interval: 2\n"
 
     it "reads a configuration from a config file specified with --config" $ do
       withSystemTempFile "journal-mailer-test-suite" $ \ configFile handle -> do
@@ -71,7 +72,8 @@ spec = do
             "receiver1@example.com" :
             "receiver2@example.com" :
             [],
-          receiverMap = empty
+          receiverMap = empty,
+          contextInterval = Just 5
          }
 
     it "parses the example configuration successfully" $ do
