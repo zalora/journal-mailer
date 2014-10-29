@@ -33,7 +33,7 @@ executable journal-mailer
     unordered-containers,
     bytestring,
     string-conversions,
-    mime-mail,
+    mime-mail >= 0.4.6,
     text,
     time,
     yaml
