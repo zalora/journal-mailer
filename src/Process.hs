@@ -71,15 +71,20 @@ mkContextInfo cfg fields gj = join <$> sequenceA (gj source <$> from <*> until)
 
 ioJournal :: MonadIO m => GetsJournal m
 ioJournal (Unit source) start end = do
-  let args = [ "-u", source
-             , "--since=" ++ takeWhile (/= '.') (show start)
-             , "--until=" ++ takeWhile (/= '.') (show end)
-             , "--no-pager"
-             ]
-  (e, stdout, _) <- liftIO $ readProcessWithExitCode "journalctl" args ""
-  case e of
-    ExitSuccess -> return $ Just stdout
-    _           -> return Nothing
+  let sinit [] = Nothing
+      sinit x  = Just $ init x
+  let args' x y = [ "-u", source
+                  , "--since=" ++ x
+                  , "--until=" ++ y
+                  , "--no-pager"
+                  ]
+  let args = args' <$> sinit (takeWhile (/= 'U') $ show start)
+                   <*> sinit (takeWhile (/= 'U') $ show end)
+  case liftIO <$> (readProcessWithExitCode "journalctl" <$> args <*> pure "") of
+    Nothing -> return Nothing
+    Just n -> n >>= \x -> case x of
+      (ExitSuccess, stdout, _) -> return $ Just stdout
+      _ -> return Nothing
 ioJournal _ _ _ = return Nothing
 
 -- * mail stuff
