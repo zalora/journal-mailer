@@ -18,6 +18,7 @@ import           Pipes
 import qualified Pipes.Prelude           as P
 import           Systemd.Journal
 import           Test.Hspec
+import           Test.Hspec.Expectations.Contrib
 import           Test.QuickCheck
 
 import           Options
@@ -119,6 +120,14 @@ spec = do
       getBody mail `shouldContain` "SOME_FIELD"
       getBody mail `shouldContain` "some_value"
 
+    it "dost not include the COREDUMP field" $ do
+      let mail = process' $
+            ("PRIORITY", "3") :
+            ("COREDUMP", "coredump") :
+            []
+      getBody mail `shouldNotContain` "COREDUMP"
+      getBody mail `shouldNotContain` "coredump"
+
     it "contains the messages preceding the error in the same unit" $ do
       let mail = process' $
             ("PRIORITY", "3") :
@@ -191,11 +200,6 @@ spec = do
              counterexample (show (receiverMap configWithReceiverMap)) $
              receiver `elem` getReceivers mail
 
-
-deriving instance Show Mail
-deriving instance Show Address
-deriving instance Show Part
-deriving instance Show Encoding
 
 getSender :: Mail -> String
 getSender = cs . addressEmail . mailFrom
