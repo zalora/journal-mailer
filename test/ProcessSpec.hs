@@ -200,6 +200,11 @@ spec = do
              counterexample (show (receiverMap configWithReceiverMap)) $
              receiver `elem` getReceivers mail
 
+deriving instance Show Mail
+deriving instance Show Address
+deriving instance Show Part
+deriving instance Show Encoding
+
 
 getSender :: Mail -> String
 getSender = cs . addressEmail . mailFrom
