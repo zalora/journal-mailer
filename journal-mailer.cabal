@@ -67,6 +67,7 @@ test-suite spec
     yaml,
 
     hspec,
+    hspec-expectations,
     QuickCheck,
     silently,
     temporary

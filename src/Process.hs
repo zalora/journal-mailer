@@ -89,6 +89,9 @@ ioJournal _ _ _ = return Nothing
 
 -- * mail stuff
 
+excludeFields :: [JournalField]
+excludeFields = [ "COREDUMP" ]
+
 mkMail :: (Applicative m, Monad m) => Configuration String
                                    -> GetsJournal m
                                    -> JournalFields
@@ -114,6 +117,7 @@ mkMail options jget fields = do
   pretty :: JournalFields -> String
   pretty =
     toList >>>
+    filter (\(k,_) -> notElem k excludeFields) >>>
     map (\ (key, value) -> prettyJournalField key ++ " = " ++ cs value) >>>
     unlines
 
