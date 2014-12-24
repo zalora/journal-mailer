@@ -153,10 +153,11 @@ showMessageSource (UnknownType name) = cs name
 showMessageSource UnknownSource = "<unknown message source>"
 
 getMessageSource :: JournalFields -> MessageSource
-getMessageSource fields = fromMaybe UnknownSource $
-  ((Unit . cs <$> lookup "UNIT" fields) <|>
-   (UnknownType . cs <$> lookup "_COMM" fields) <|>
-   (UnknownType . cs <$> lookup "SYSLOG_IDENTIFIER" fields))
+getMessageSource fields = fromMaybe UnknownSource
+  ((Unit . cs <$> lookup "_SYSTEMD_UNIT" fields) <|>
+   (Unit . cs <$> lookup "UNIT" fields) <|>
+   (UnknownType . cs <$> lookup "SYSLOG_IDENTIFIER" fields) <|>
+   (UnknownType . cs <$> lookup "_COMM" fields))
 
 -- | combines RESULT and MESSAGE (if they exist)
 outcome :: JournalFields -> Text

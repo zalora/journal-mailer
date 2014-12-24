@@ -136,7 +136,7 @@ spec = do
             []
       getBody mail `shouldContain` "Oct 27 11:49:53 host executable[1557]:"
 
-    let unitKeys = ["SYSLOG_IDENTIFIER", "_COMM", "UNIT"]
+    let unitKeys = ["_COMM", "SYSLOG_IDENTIFIER", "UNIT", "_SYSTEMD_UNIT"]
         configWithReceiverMap = options{
           receiverMap = fromList $
             ("unit1", ["rec1", "rec2"]) :
