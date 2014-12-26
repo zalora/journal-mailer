@@ -3,6 +3,7 @@
 module Run where
 
 
+import           Data.Maybe (fromMaybe)
 import           Network.Mail.Mime
 import           Pipes
 import           Pipes.Prelude      as P
@@ -24,7 +25,7 @@ run = do
       progName <- getProgName
       die ("usage: " ++ progName ++ " EMAIL_ADDRESS...")
     _ -> runEffect $ runSafeP $
-      (journal >-> process options ioJournal >-> for cat (liftIO . notify))
+      (journal >-> process options ioJournal >-> for cat (liftIO . notify options))
 
 
 journal :: MonadSafe m => Producer JournalFields m ()
@@ -32,7 +33,10 @@ journal =
   openJournal [] FromEnd Nothing Nothing >->
   P.map journalEntryFields
 
-notify :: Mail -> IO ()
-notify mail = do
+notify :: Configuration String -> Mail -> IO ()
+notify options mail = do
   hPutStrLn stderr "sending mail notification"
-  renderSendMail mail
+  renderSendMailCustom sendmailPath' sendmailOpts' mail
+ where
+  sendmailPath' = fromMaybe "/usr/sbin/sendmail" $ sendmailPath options
+  sendmailOpts' = fromMaybe [] $ sendmailOpts options

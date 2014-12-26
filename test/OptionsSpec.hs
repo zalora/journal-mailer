@@ -67,6 +67,8 @@ spec = do
         options <- withArgs ["--config", configFile] $ getConfiguration
         options `shouldBe` Configuration {
           showHelp = False,
+          sendmailPath = Nothing,
+          sendmailOpts = Nothing,
           sender = "sender@example.com",
           receivers =
             "receiver1@example.com" :

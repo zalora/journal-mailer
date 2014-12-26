@@ -24,6 +24,8 @@ import           System.IO
 
 data Configuration sender = Configuration {
   showHelp :: Bool,
+  sendmailPath :: Maybe FilePath,
+  sendmailOpts :: Maybe [String],
   sender :: sender,
   receivers :: [String],
   receiverMap :: HashMap String [String], -- mapping from units to receivers' email addresses
@@ -41,14 +43,16 @@ addReceiver :: String -> Configuration a -> Configuration a
 addReceiver r c = c{receivers = receivers c ++ [r]}
 
 defaultConfiguration :: Configuration (Maybe String)
-defaultConfiguration = Configuration False Nothing [] empty (Just 5)
+defaultConfiguration = Configuration False Nothing Nothing Nothing [] empty (Just 5)
 
 instance FromJSON (Configuration (Maybe String)) where
   parseJSON (Object o) = do
     forM_ (keys o) $ \ key ->
-      when (not (key `elem` ["sender", "receivers", "receiver_map", "context_interval"])) $
+      when (not (key `elem` ["sendmail_path", "sendmail_opts", "sender", "receivers", "receiver_map", "context_interval"])) $
         fail ("unknown key: " ++ cs key)
     Configuration False <$>
+      o .:? "sendmail_path" <*>
+      o .:? "sendmail_opts" <*>
       o .:? "sender" <*>
       o .:? "receivers" .!= [] <*>
       o .:? "receiver_map" .!= empty <*>
@@ -99,8 +103,9 @@ getConfiguration = do
           exitWith ExitSuccess
         else case sender config of
           Just sender -> return $
-            Configuration False sender (receivers config)
-                          (receiverMap config) (contextInterval config)
+            Configuration False (sendmailPath config) (sendmailOpts config)
+                          sender (receivers config) (receiverMap config)
+                          (contextInterval config)
           Nothing -> do
             hPutStrLn stderr "no --sender given"
             exitWith $ ExitFailure 1
@@ -124,6 +129,8 @@ addConfig configFile input = do
   fileConfig :: Configuration (Maybe String) <- abortOnError =<< decodeFileEither configFile
   return $ Configuration {
     showHelp = showHelp input || showHelp fileConfig,
+    sendmailPath = sendmailPath fileConfig,
+    sendmailOpts = sendmailOpts fileConfig,
     sender = sender fileConfig <|> sender input,
     receivers = receivers input ++ receivers fileConfig,
     receiverMap = receiverMap fileConfig `union` receiverMap input,

@@ -31,6 +31,8 @@ main = hspec spec
 options :: Configuration String
 options = Configuration {
   showHelp = False,
+  sendmailPath = Nothing,
+  sendmailOpts = Nothing,
   sender = "foo@bar",
   receivers = ["fakeReceiver@bar"],
   receiverMap = empty,

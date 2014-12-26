@@ -12,3 +12,5 @@ receiver_map:
 
 context_interval: 5  # how many seconds of previous logs from the unit to include
 
+sendmail_path: /usr/sbin/sendmail # optional
+sendmail_opts: []                 # optional
