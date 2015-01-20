@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, LambdaCase #-}
 
 module Process where
 
@@ -69,22 +69,26 @@ mkContextInfo cfg fields gj = join <$> sequenceA (gj source <$> from <*> until)
          <$> fmap (negate . fromInteger) (contextInterval cfg)
          <*> until
 
+-- JOURNALCTL(1):
+--
+--    --since=, --until=
+--        Start showing entries on or newer than the specified date, or on or
+--        older than the specified date, respectively. Date specifications
+--        should be of the format "2012-10-30 18:17:16".
+--
+formatUTCTimeForJournalCtl :: UTCTime -> String
+formatUTCTimeForJournalCtl = take 16 . show
+
 ioJournal :: MonadIO m => GetsJournal m
 ioJournal (Unit source) start end = do
-  let sinit [] = Nothing
-      sinit x  = Just $ init x
-  let args' x y = [ "-u", source
-                  , "--since=" ++ x
-                  , "--until=" ++ y
-                  , "--no-pager"
-                  ]
-  let args = args' <$> sinit (takeWhile (/= 'U') $ show start)
-                   <*> sinit (takeWhile (/= 'U') $ show end)
-  case liftIO <$> (readProcessWithExitCode "journalctl" <$> args <*> pure "") of
-    Nothing -> return Nothing
-    Just n -> n >>= \x -> case x of
-      (ExitSuccess, stdout, _) -> return $ Just stdout
-      _ -> return Nothing
+  let args = [ "-u", source
+             , "--since=" ++ formatUTCTimeForJournalCtl start
+             , "--until=" ++ formatUTCTimeForJournalCtl end
+             , "--no-pager"
+             ]
+  liftIO $ readProcessWithExitCode "journalctl" args "" >>= return . \case
+      (ExitSuccess, stdout, _) -> Just stdout
+      _ -> Nothing
 ioJournal _ _ _ = return Nothing
 
 -- * mail stuff
