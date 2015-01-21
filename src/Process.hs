@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TupleSections, LambdaCase #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 
 module Process where
 
@@ -88,7 +88,8 @@ ioJournal (Unit source) start end = do
              , "--until=" ++ formatUTCTimeForJournalCtl end
              , "--no-pager"
              ]
-  liftIO $ readProcessWithExitCode "journalctl" args "" >>= return . \case
+  output <- liftIO $ readProcessWithExitCode "journalctl" args ""
+  return $ case output of
       (ExitSuccess, stdout, _) -> Just stdout
       _ -> Nothing
 ioJournal _ _ _ = return Nothing
