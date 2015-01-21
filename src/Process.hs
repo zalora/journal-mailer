@@ -18,12 +18,14 @@ import           Data.Traversable        (sequenceA)
 import           Data.Text               (Text)
 import           Data.Time.Clock         (UTCTime, addUTCTime)
 import           Data.Time.Clock.POSIX   (posixSecondsToUTCTime)
+import           Data.Time.Format        (formatTime)
 import           GHC.IO.Exception        (ExitCode(..))
 import           Network.Mail.Mime
 import           Pipes
 import qualified Pipes.Prelude           as P
 import           Prelude                 hiding (lookup)
 import           Systemd.Journal
+import           System.Locale           (defaultTimeLocale)
 import           System.Process          (readProcessWithExitCode)
 import           Text.Read               (readMaybe)
 
@@ -77,7 +79,7 @@ mkContextInfo cfg fields gj = join <$> sequenceA (gj source <$> from <*> until)
 --        should be of the format "2012-10-30 18:17:16".
 --
 formatUTCTimeForJournalCtl :: UTCTime -> String
-formatUTCTimeForJournalCtl = take 16 . show
+formatUTCTimeForJournalCtl = formatTime defaultTimeLocale "%F %T"
 
 ioJournal :: MonadIO m => GetsJournal m
 ioJournal (Unit source) start end = do
