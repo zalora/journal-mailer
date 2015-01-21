@@ -13,6 +13,8 @@ import           Data.List               as List (isInfixOf, lookup)
 import           Data.Maybe
 import           Data.String
 import           Data.String.Conversions
+import           Data.Time.Calendar      (Day(ModifiedJulianDay))
+import           Data.Time.Clock         (UTCTime(UTCTime))
 import           Network.Mail.Mime
 import           Pipes
 import qualified Pipes.Prelude           as P
@@ -58,6 +60,11 @@ spec = do
     it "converts arbitrary fields to strings" $ do
       property $ \ s ->
         prettyJournalField (fromString s) `shouldBe` map toUpper s
+
+  describe "formatUTCTimeForJournalCtl" $ do
+    it "Formats UTCTime as %F %T" $ do
+      let time = UTCTime (ModifiedJulianDay 57043) 28551.643787
+      formatUTCTimeForJournalCtl time `shouldBe` "2015-01-21 07:55:51"
 
   describe "process" $ do
     it "uses the sender address provided on the command line" $ do
